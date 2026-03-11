@@ -2,130 +2,107 @@
 <html>
 <head>
   <base target="_top">
-  <!-- Chart.js for 2026 Performance Visualization -->
   <script src="https://cdn.jsdelivr.net"></script>
   <style>
-    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0b0e11; color: #e9eaeb; padding: 20px; display: flex; flex-direction: column; align-items: center; margin: 0; }
-    .card { background: #181a20; border-radius: 12px; padding: 25px; width: 90%; max-width: 850px; border: 1px solid #2b2f36; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 20px; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0b0e11; color: #e9eaeb; padding: 20px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+    .card { background: #181a20; border-radius: 12px; padding: 20px; width: 95%; max-width: 900px; border: 1px solid #2b2f36; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
     
-    h2 { color: #f0b90b; margin: 0 0 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 22px; }
-    .status-tag { font-size: 11px; background: #2ebd85; color: white; padding: 4px 10px; border-radius: 50px; letter-spacing: 1px; }
-    
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
-    .stat-box { background: #2b2f36; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid transparent; transition: 0.3s; }
-    .stat-box:hover { border-color: #4A86E8; }
-    .label { font-size: 11px; color: #848e9c; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
-    .value { font-size: 20px; font-weight: bold; color: #4A86E8; }
+    /* Video Streaming Section */
+    .video-container { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; margin-bottom: 20px; overflow: hidden; border: 2px solid #2b2f36; position: relative; }
+    video { width: 100%; height: 100%; object-fit: cover; }
+    .stream-overlay { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 4px; font-size: 12px; color: #f0b90b; border: 1px solid #f0b90b; }
 
-    .chart-container { background: #1e2026; padding: 15px; border-radius: 8px; margin-bottom: 20px; height: 320px; position: relative; border: 1px solid #2b2f36; }
+    h2 { color: #f0b90b; margin: 0 0 15px 0; display: flex; justify-content: space-between; align-items: center; font-size: 20px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .stat-box { background: #2b2f36; padding: 12px; border-radius: 8px; text-align: center; }
+    .label { font-size: 10px; color: #848e9c; text-transform: uppercase; margin-bottom: 4px; }
+    .value { font-size: 16px; font-weight: bold; color: #4A86E8; }
+
+    .chart-container { height: 200px; margin-bottom: 20px; }
     
-    .footer-actions { display: flex; flex-direction: column; gap: 10px; }
-    .btn-init { background: #f0b90b; color: #181a20; border: none; padding: 14px; border-radius: 6px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 14px; }
-    .btn-init:hover { background: #ffe033; transform: translateY(-1px); }
-    .btn-init:active { transform: translateY(0); }
-    .btn-init:disabled { background: #474d57; color: #848e9c; cursor: not-allowed; }
-    
-    #msg { font-size: 13px; text-align: center; margin-top: 10px; min-height: 20px; font-weight: 500; }
-    .sheet-link { color: #848e9c; text-decoration: none; font-size: 12px; margin-top: 15px; display: block; text-align: center; transition: 0.2s; }
-    .sheet-link:hover { color: #f0b90b; }
+    .btn-init { width: 100%; background: #f0b90b; color: #181a20; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    #msg { font-size: 12px; text-align: center; margin-top: 8px; color: #848e9c; }
   </style>
 </head>
 <body>
 
   <div class="card">
-    <h2>BeamVR Dashboard <span class="status-tag">PORT 45517</span></h2>
+    <h2>BeamVR Live <span class="stream-overlay">4K STREAM | PORT 45517</span></h2>
     
+    <!-- Video Stream Window -->
+    <div class="video-container">
+      <video id="remoteVideo" autoplay playsinline muted poster="https://via.placeholder.com..."></video>
+    </div>
+
     <div class="stats-grid">
-      <div class="stat-box"><div class="label">Current Latency</div><div id="lat-val" class="value">-- ms</div></div>
-      <div class="stat-box"><div class="label">Stream Bitrate</div><div id="bit-val" class="value">-- kbps</div></div>
-      <div class="stat-box"><div class="label">Signal Type</div><div class="value" style="color:#2ebd85">USB Tether</div></div>
+      <div class="stat-box"><div class="label">Latency</div><div id="lat-val" class="value">-- ms</div></div>
+      <div class="stat-box"><div class="label">Bitrate</div><div id="bit-val" class="value">-- kbps</div></div>
+      <div class="stat-box"><div class="label">Status</div><div class="value" style="color:#2ebd85">STREAMING</div></div>
     </div>
 
     <div class="chart-container">
       <canvas id="latencyChart"></canvas>
     </div>
 
-    <div class="footer-actions">
-      <button id="initBtn" class="btn-init" onclick="runInit()">INITIALIZE LOGGING SHEET</button>
-      <div id="msg">Ready to beam from Shadow PC.</div>
-      <a href="https://docs.google.com" target="_blank" class="sheet-link">View Raw Google Sheet Data ↗</a>
-    </div>
+    <button id="initBtn" class="btn-init" onclick="runInit()">INITIALIZE SESSION</button>
+    <div id="msg">Linked to Sheet: 1nJoL...MJW8</div>
   </div>
 
   <script>
     let chart;
-    const SHEET_ID = "1nJoL2Rho6kyOrbE3RE8O0hKRJ6POAE6ZwIgSCLfMJW8";
+    const video = document.getElementById('remoteVideo');
 
-    // 1. Initialize the Latency Chart
+    // 1. Initialize Performance Chart
     function initChart() {
       const ctx = document.getElementById('latencyChart').getContext('2d');
       chart = new Chart(ctx, {
         type: 'line',
-        data: { 
-          labels: [], 
-          datasets: [{ 
-            label: 'Latency (ms)', 
-            data: [], 
-            borderColor: '#f0b90b', 
-            backgroundColor: 'rgba(240, 185, 11, 0.1)', 
-            fill: true, 
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#f0b90b'
-          }] 
-        },
-        options: { 
-          responsive: true, 
-          maintainAspectRatio: false, 
-          scales: { 
-            y: { grid: { color: '#2b2f36' }, ticks: { color: '#848e9c' }, beginAtZero: true }, 
-            x: { grid: { display: false }, ticks: { color: '#848e9c', maxRotation: 0 } } 
-          }, 
-          plugins: { legend: { display: false } } 
-        }
+        data: { labels: [], datasets: [{ label: 'Latency', data: [], borderColor: '#f0b90b', tension: 0.4, fill: false }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { grid: { color: '#2b2f36' } } }, plugins: { legend: { display: false } } }
       });
     }
 
-    // 2. Fixed Button Logic to setup the Sheet
-    function runInit() {
-      const btn = document.getElementById('initBtn');
-      const msg = document.getElementById('msg');
-      btn.disabled = true;
-      msg.innerHTML = "<span style='color:#4A86E8'>Setting up columns on Port 45517...</span>";
+    // 2. Video Socket Connection (2026 Tech)
+    function connectVideoStream() {
+      // Connect to the Shadow PC WebSocket Relay
+      const ws = new WebSocket('ws://localhost:45517'); // Relay script required on local machine
+      ws.binaryType = 'arraybuffer';
+      
+      const mediaSource = new MediaSource();
+      video.src = URL.createObjectURL(mediaSource);
 
-      google.script.run
-        .withSuccessHandler(() => {
-          btn.style.display = 'none';
-          msg.innerHTML = "✅ <span style='color:#2ebd85'>Sheet Initialized. Logging active.</span>";
-        })
-        .withFailureHandler(err => {
-          btn.disabled = false;
-          msg.innerHTML = "❌ <span style='color:#f6465d'>Error: " + err.message + "</span>";
-        })
-        .setupSheet(SHEET_ID); // Calls Code.gs function with the Sheet ID
+      mediaSource.addEventListener('sourceopen', () => {
+        const sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E"');
+        ws.onmessage = (e) => {
+          if (!sourceBuffer.updating) sourceBuffer.appendBuffer(e.data);
+        };
+      });
     }
 
-    // 3. Real-time Polling for Latest Sheet Data
+    // 3. Telemetry Sync (Google Sheets)
     function refreshData() {
       google.script.run.withSuccessHandler(data => {
         if (data && data.length > 0) {
           const latest = data[data.length - 1];
           document.getElementById('lat-val').innerText = latest.latency + " ms";
           document.getElementById('bit-val').innerText = latest.bitrate + " kbps";
-          
-          // Update Chart (Max 15 points for clarity)
           chart.data.labels = data.map(d => d.time);
           chart.data.datasets[0].data = data.map(d => d.latency);
-          chart.update('none'); 
+          chart.update('none');
         }
-      }).getLatestLogs(SHEET_ID);
+      }).getLatestLogs();
     }
 
-    // 4. Start Dashboard on Load
+    function runInit() {
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('msg').innerHTML = "✅ Session Logged.";
+      }).setupSheet();
+    }
+
     window.onload = () => {
       initChart();
-      refreshData();
-      setInterval(refreshData, 5000); // Poll Google Sheets every 5 seconds
+      setInterval(refreshData, 5000);
+      // connectVideoStream(); // Uncomment when WebSocket relay is live
     };
   </script>
 </body>
