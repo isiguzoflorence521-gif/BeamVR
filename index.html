@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #e0e0e0; padding: 20px; text-align: center; }
+      .card { background: #1e1e1e; border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: inline-block; min-width: 300px; border: 1px solid #333; }
+      .status { font-size: 24px; color: #4CAF50; font-weight: bold; margin: 10px 0; }
+      .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; text-align: left; }
+      .label { color: #888; font-size: 12px; text-transform: uppercase; }
+      .value { font-size: 18px; color: #4A86E8; font-weight: bold; }
+      .port { color: #f4b400; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>BeamVR Monitor</h2>
+      <div class="status">● ACTIVE</div>
+      <div class="stat-grid">
+        <div><div class="label">Software</div><div class="value">Trinus CBVR</div></div>
+        <div><div class="label">Port</div><div class="value port">45517</div></div>
+        <div><div class="label">Connection</div><div class="value">USB Tether</div></div>
+        <div><div class="label">Platform</div><div class="value">Shadow PC</div></div>
+      </div>
+      <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+      <button onclick="google.script.run.setupSheet()" style="background: #4A86E8; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Initialize Sheet</button>
+    </div>
+
+    <script>
+      // 2026 Auto-refresh logic could go here to pull latest Latency from Sheet
+      console.log("BeamVR Awakener Interface Loaded.");
+    </script>
+  </body>
+</html>
+
