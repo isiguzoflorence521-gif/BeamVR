@@ -1,2 +1,18 @@
-# BeamVR
-BeamVR is a high-performance SDK for streaming low-latency video from mobile VR headsets to PCs. Designed for "passive" VR like Feebz, it uses optimized H.264 protocols over Wi-Fi or USB. Turn solitary VR into a shared experience for gaming, demos, and debugging with a lightweight, developer-friendly API for Android and iOS.
+# BeamVR SDK 🚀
+
+> Low-latency screen mirroring for mobile VR environments.
+
+[![License: MIT](https://img.shields.io)](https://opensource.org)
+[![Platform: Android/iOS/Windows](https://img.shields.io)](#)
+
+## 📦 Repository Structure
+
+```text
+beam-vr/
+├── sdk/                 # Core logic & platform wrappers
+│   ├── include/         # Public headers (beam_vr.h)
+│   ├── src/             # Implementation (C++)
+│   └── platforms/       # Android (JNI) & iOS (Swift)
+├── examples/            # Sender & Receiver samples
+├── docs/                # API reference
+└── tests/               # Unit & integration tests
