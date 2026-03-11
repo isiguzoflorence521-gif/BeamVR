@@ -1,35 +1,132 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
-    <style>
-      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #e0e0e0; padding: 20px; text-align: center; }
-      .card { background: #1e1e1e; border-radius: 10px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: inline-block; min-width: 300px; border: 1px solid #333; }
-      .status { font-size: 24px; color: #4CAF50; font-weight: bold; margin: 10px 0; }
-      .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; text-align: left; }
-      .label { color: #888; font-size: 12px; text-transform: uppercase; }
-      .value { font-size: 18px; color: #4A86E8; font-weight: bold; }
-      .port { color: #f4b400; }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <h2>BeamVR Monitor</h2>
-      <div class="status">● ACTIVE</div>
-      <div class="stat-grid">
-        <div><div class="label">Software</div><div class="value">Trinus CBVR</div></div>
-        <div><div class="label">Port</div><div class="value port">45517</div></div>
-        <div><div class="label">Connection</div><div class="value">USB Tether</div></div>
-        <div><div class="label">Platform</div><div class="value">Shadow PC</div></div>
-      </div>
-      <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-      <button onclick="google.script.run.setupSheet()" style="background: #4A86E8; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Initialize Sheet</button>
+<head>
+  <base target="_top">
+  <!-- Chart.js for 2026 Performance Visualization -->
+  <script src="https://cdn.jsdelivr.net"></script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0b0e11; color: #e9eaeb; padding: 20px; display: flex; flex-direction: column; align-items: center; margin: 0; }
+    .card { background: #181a20; border-radius: 12px; padding: 25px; width: 90%; max-width: 850px; border: 1px solid #2b2f36; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 20px; }
+    
+    h2 { color: #f0b90b; margin: 0 0 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 22px; }
+    .status-tag { font-size: 11px; background: #2ebd85; color: white; padding: 4px 10px; border-radius: 50px; letter-spacing: 1px; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+    .stat-box { background: #2b2f36; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid transparent; transition: 0.3s; }
+    .stat-box:hover { border-color: #4A86E8; }
+    .label { font-size: 11px; color: #848e9c; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+    .value { font-size: 20px; font-weight: bold; color: #4A86E8; }
+
+    .chart-container { background: #1e2026; padding: 15px; border-radius: 8px; margin-bottom: 20px; height: 320px; position: relative; border: 1px solid #2b2f36; }
+    
+    .footer-actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn-init { background: #f0b90b; color: #181a20; border: none; padding: 14px; border-radius: 6px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 14px; }
+    .btn-init:hover { background: #ffe033; transform: translateY(-1px); }
+    .btn-init:active { transform: translateY(0); }
+    .btn-init:disabled { background: #474d57; color: #848e9c; cursor: not-allowed; }
+    
+    #msg { font-size: 13px; text-align: center; margin-top: 10px; min-height: 20px; font-weight: 500; }
+    .sheet-link { color: #848e9c; text-decoration: none; font-size: 12px; margin-top: 15px; display: block; text-align: center; transition: 0.2s; }
+    .sheet-link:hover { color: #f0b90b; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>BeamVR Dashboard <span class="status-tag">PORT 45517</span></h2>
+    
+    <div class="stats-grid">
+      <div class="stat-box"><div class="label">Current Latency</div><div id="lat-val" class="value">-- ms</div></div>
+      <div class="stat-box"><div class="label">Stream Bitrate</div><div id="bit-val" class="value">-- kbps</div></div>
+      <div class="stat-box"><div class="label">Signal Type</div><div class="value" style="color:#2ebd85">USB Tether</div></div>
     </div>
 
-    <script>
-      // 2026 Auto-refresh logic could go here to pull latest Latency from Sheet
-      console.log("BeamVR Awakener Interface Loaded.");
-    </script>
-  </body>
-</html>
+    <div class="chart-container">
+      <canvas id="latencyChart"></canvas>
+    </div>
 
+    <div class="footer-actions">
+      <button id="initBtn" class="btn-init" onclick="runInit()">INITIALIZE LOGGING SHEET</button>
+      <div id="msg">Ready to beam from Shadow PC.</div>
+      <a href="https://docs.google.com" target="_blank" class="sheet-link">View Raw Google Sheet Data ↗</a>
+    </div>
+  </div>
+
+  <script>
+    let chart;
+    const SHEET_ID = "1nJoL2Rho6kyOrbE3RE8O0hKRJ6POAE6ZwIgSCLfMJW8";
+
+    // 1. Initialize the Latency Chart
+    function initChart() {
+      const ctx = document.getElementById('latencyChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: { 
+          labels: [], 
+          datasets: [{ 
+            label: 'Latency (ms)', 
+            data: [], 
+            borderColor: '#f0b90b', 
+            backgroundColor: 'rgba(240, 185, 11, 0.1)', 
+            fill: true, 
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#f0b90b'
+          }] 
+        },
+        options: { 
+          responsive: true, 
+          maintainAspectRatio: false, 
+          scales: { 
+            y: { grid: { color: '#2b2f36' }, ticks: { color: '#848e9c' }, beginAtZero: true }, 
+            x: { grid: { display: false }, ticks: { color: '#848e9c', maxRotation: 0 } } 
+          }, 
+          plugins: { legend: { display: false } } 
+        }
+      });
+    }
+
+    // 2. Fixed Button Logic to setup the Sheet
+    function runInit() {
+      const btn = document.getElementById('initBtn');
+      const msg = document.getElementById('msg');
+      btn.disabled = true;
+      msg.innerHTML = "<span style='color:#4A86E8'>Setting up columns on Port 45517...</span>";
+
+      google.script.run
+        .withSuccessHandler(() => {
+          btn.style.display = 'none';
+          msg.innerHTML = "✅ <span style='color:#2ebd85'>Sheet Initialized. Logging active.</span>";
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false;
+          msg.innerHTML = "❌ <span style='color:#f6465d'>Error: " + err.message + "</span>";
+        })
+        .setupSheet(SHEET_ID); // Calls Code.gs function with the Sheet ID
+    }
+
+    // 3. Real-time Polling for Latest Sheet Data
+    function refreshData() {
+      google.script.run.withSuccessHandler(data => {
+        if (data && data.length > 0) {
+          const latest = data[data.length - 1];
+          document.getElementById('lat-val').innerText = latest.latency + " ms";
+          document.getElementById('bit-val').innerText = latest.bitrate + " kbps";
+          
+          // Update Chart (Max 15 points for clarity)
+          chart.data.labels = data.map(d => d.time);
+          chart.data.datasets[0].data = data.map(d => d.latency);
+          chart.update('none'); 
+        }
+      }).getLatestLogs(SHEET_ID);
+    }
+
+    // 4. Start Dashboard on Load
+    window.onload = () => {
+      initChart();
+      refreshData();
+      setInterval(refreshData, 5000); // Poll Google Sheets every 5 seconds
+    };
+  </script>
+</body>
+</html>
